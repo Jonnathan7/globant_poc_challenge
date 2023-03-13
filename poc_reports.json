@@ -1,0 +1,223 @@
+{
+    "name": "poc_reports",
+    "properties": {
+        "activities": [
+            {
+                "name": "Export Report1",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureMySqlSource",
+                        "query": "Select  d.department, j.job, \n\tsum(case when QUARTER(h.date_time) = 1 then 1 else 0 end) as Q1,\n\tsum(case when QUARTER(h.date_time) = 2 then 1 else 0 end) as Q2,\n\tsum(case when QUARTER(h.date_time) = 3 then 1 else 0 end) as Q3,\n\tsum(case when QUARTER(h.date_time) = 4 then 1 else 0 end) as Q4\nfrom globant_departments d inner join globant_hired_employees h \n\ton d.id = h.department_id inner join globant_jobs j\n    on h.job_id = j.id\nwhere year(h.date_time) = 2021\norder by d.department, j.job;",
+                        "queryTimeout": "02:00:00"
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".txt"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "mappings": [
+                            {
+                                "source": {
+                                    "name": "department",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "department",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "job",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "job",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Q1",
+                                    "type": "Decimal"
+                                },
+                                "sink": {
+                                    "name": "Q1",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Q2",
+                                    "type": "Decimal"
+                                },
+                                "sink": {
+                                    "name": "Q2",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Q3",
+                                    "type": "Decimal"
+                                },
+                                "sink": {
+                                    "name": "Q3",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "Q4",
+                                    "type": "Decimal"
+                                },
+                                "sink": {
+                                    "name": "Q4",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            }
+                        ],
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "mysql_hired_employees",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "globant_reporte_1",
+                        "type": "DatasetReference"
+                    }
+                ]
+            },
+            {
+                "name": "Export Report2",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Export Report1",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureMySqlSource",
+                        "query": "Select h.department_id, d.department, count(department_id) as hired\nfrom globant_departments d inner join globant_hired_employees h \n\ton d.id = h.department_id\nwhere year(h.date_time) = 2021\ngroup by h.department_id, d.department\norder by hired desc;",
+                        "queryTimeout": "02:00:00"
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".txt"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "mappings": [
+                            {
+                                "source": {
+                                    "name": "department_id",
+                                    "type": "Int32",
+                                    "physicalType": "int"
+                                },
+                                "sink": {
+                                    "name": "department_id",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "department",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "department",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "hired",
+                                    "type": "Int64"
+                                },
+                                "sink": {
+                                    "name": "hired",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            }
+                        ],
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "mysql_hired_employees",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "globant_reporte_2",
+                        "type": "DatasetReference"
+                    }
+                ]
+            }
+        ],
+        "annotations": []
+    }
+}
